@@ -124,6 +124,9 @@ def main():
     # Initialize session state for current collection if not exists
     if 'current_collection' not in st.session_state:
         st.session_state.current_collection = None
+    
+    if 'database_populated' not in st.session_state:
+        st.session_state.database_populated = False
 
     # First-time setup or deployment selection
     if 'deployment_configured' not in st.session_state:
@@ -163,6 +166,13 @@ def main():
         # Initialize services
         embedder, db_manager, config_manager = initialize_services()
 
+        # Check if any collections exist
+        config = db_manager.load_config()
+        collections = [value for key, value in config.items() 
+                      if key not in ["deployment", "collections"]]
+        if collections:
+            st.session_state.database_populated = True
+
         # Create tabs
         tab1, tab2 = st.tabs(["Upload Database", "Search Faces"])
 
@@ -181,6 +191,7 @@ def main():
                             results = process_folder(folder_path, embedder, db_manager)
                             
                             if results["status"] == "success":
+                                st.session_state.database_populated = True
                                 st.success(f"""
                                     Processing complete:
                                     - Images processed: {results['processed']}
@@ -189,10 +200,15 @@ def main():
                                     - Storage errors: {results['store_errors']}
                                     - Collection name: {results['collection_name']}
                                 """)
+                                st.info("You can now switch to the 'Search Faces' tab to search for similar faces.")
                             else:
                                 st.error(f"Error: {results['message']}")
 
         with tab2:
+            if not st.session_state.database_populated:
+                st.warning("Please upload and process images in the 'Upload Database' tab first.")
+                st.stop()
+            
             st.header("Search Similar Faces")
             
             # Get available collections
@@ -284,7 +300,8 @@ def main():
         # Add option to change deployment
         if st.sidebar.button("Change Deployment"):
             del st.session_state.deployment_configured
-            st.session_state.current_collection = None  # Clear the current collection
+            st.session_state.current_collection = None
+            st.session_state.database_populated = False
             st.rerun()  # Changed from experimental_rerun() to rerun()
 
 if __name__ == "__main__":
