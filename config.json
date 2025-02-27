@@ -1,0 +1,12 @@
+{
+    "deployment": {
+        "type": "docker",
+        "settings": {
+            "url": "http://localhost:6333",
+            "api_key": "",
+            "port": 6333
+        }
+    },
+    "collections": {},
+    "C:\\Users\\sniki\\Desktop\\AadarshProject\\Face_similarity_search\\combined": "20250228000403"
+}

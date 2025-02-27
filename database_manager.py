@@ -96,7 +96,7 @@ class DatabaseManager:
             raise
 
     def search_similar_faces(self, collection_name: str, query_vector: List[float], 
-                           limit: int = 5) -> List[Dict]:
+                            limit: int = 5) -> List[Dict]:
         """Search for similar faces in the database."""
         try:
             results = self.client.search(

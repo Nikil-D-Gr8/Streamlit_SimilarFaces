@@ -5,6 +5,7 @@ from PIL import Image
 import logging
 from typing import List, Optional
 import os
+from tqdm import tqdm
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -79,31 +80,34 @@ class FaceEmbedder:
             if not os.path.exists(folder_path):
                 raise FileNotFoundError(f"Folder not found: {folder_path}")
 
-            # Process each image in the folder
-            for filename in os.listdir(folder_path):
-                if filename.lower().endswith(('.png', '.jpg', '.jpeg')):
-                    try:
-                        image_path = os.path.join(folder_path, filename)
-                        embeddings = self.get_face_embeddings(image_path)
-                        
-                        if embeddings:
-                            results['embeddings'].extend(embeddings)
-                            results['filenames'].extend([filename] * len(embeddings))
-                            results['stats']['processed'] += 1
-                        else:
-                            results['errors'].append({
-                                'file': filename,
-                                'error': 'No faces detected'
-                            })
-                            results['stats']['failed'] += 1
-                            
-                    except Exception as e:
+            # Get list of image files
+            image_files = [f for f in os.listdir(folder_path) 
+                         if f.lower().endswith(('.png', '.jpg', '.jpeg'))]
+            
+            # Process each image in the folder with progress bar
+            for filename in tqdm(image_files, desc="Processing images", unit="image"):
+                try:
+                    image_path = os.path.join(folder_path, filename)
+                    embeddings = self.get_face_embeddings(image_path)
+                    
+                    if embeddings:
+                        results['embeddings'].extend(embeddings)
+                        results['filenames'].extend([filename] * len(embeddings))
+                        results['stats']['processed'] += 1
+                    else:
                         results['errors'].append({
                             'file': filename,
-                            'error': str(e)
+                            'error': 'No faces detected'
                         })
                         results['stats']['failed'] += 1
-                        logger.error(f"Error processing {filename}: {str(e)}")
+                        
+                except Exception as e:
+                    results['errors'].append({
+                        'file': filename,
+                        'error': str(e)
+                    })
+                    results['stats']['failed'] += 1
+                    logger.error(f"Error processing {filename}: {str(e)}")
 
             return results
 
